@@ -2,13 +2,8 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
-/**
- * Supabase server client for Route Handlers (API routes).
- * Works with Next.js App Router and @supabase/ssr.
- */
 export async function getSupabaseRoute() {
   const cookieStore = await cookies();
-
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
@@ -18,21 +13,12 @@ export async function getSupabaseRoute() {
         return cookieStore.get(name)?.value;
       },
       set(name: string, value: string, options?: CookieOptions) {
-        try {
-          cookieStore.set({ name, value, ...(options ?? {}) });
-        } catch {
-          /* ignore writes in immutable contexts */
-        }
+        try { cookieStore.set({ name, value, ...(options ?? {}) }); } catch {}
       },
       remove(name: string, options?: CookieOptions) {
-        try {
-          cookieStore.set({ name, value: '', ...(options ?? {}), maxAge: 0 });
-        } catch {
-          /* ignore writes in immutable contexts */
-        }
+        try { cookieStore.set({ name, value: '', ...(options ?? {}), maxAge: 0 }); } catch {}
       },
     },
   });
 }
-
 export { getSupabaseRoute as supabaseRoute };
