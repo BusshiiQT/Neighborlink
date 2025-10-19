@@ -1,15 +1,23 @@
-import type { ReactNode } from 'react';
-import './globals.css';
-import Header from '@/components/Header';
-import PremiumBanner from '@/components/PremiumBanner';
+// app/layout.tsx
+import type { Metadata, Viewport } from "next";
+import "./globals.css";
+import Header from "@/components/Header";
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export const metadata: Metadata = {
+  title: "NeighborLink",
+  description: "Buy, sell, and connect with your neighborhood.",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#000000",
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="bg-black text-white min-h-screen flex flex-col">
+      <body className="bg-white text-black">
         <Header />
-        <PremiumBanner />
-        <main className="flex-1">{children}</main>
+        {children}
       </body>
     </html>
   );
