@@ -35,5 +35,4 @@ export async function getSupabaseRoute() {
   });
 }
 
-// Optional alias so older imports keep working:
 export { getSupabaseRoute as supabaseRoute };
