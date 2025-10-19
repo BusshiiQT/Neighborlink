@@ -1,12 +1,16 @@
 {
-  "name": "craigslist2",
+  "name": "neighborlink",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "npm@11.5.1",
+  "engines": {
+    "node": ">=20 <23"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "next lint"
   },
   "dependencies": {
     "@supabase/auth-helpers-nextjs": "^0.10.0",
