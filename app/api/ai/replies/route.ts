@@ -1,34 +1,25 @@
-// app/api/ai/replies/route.ts
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import OpenAI from 'openai';
+import { cookies } from 'next/headers';
 import { getSupabaseRoute } from '@/lib/supabaseRoute';
 
-const DEMO =
-  String(process.env.DEMO_MODE ?? process.env.NEXT_PUBLIC_DEMO_MODE ?? 'false')
-    .toLowerCase() === 'true';
-
+const DEMO = String(process.env.DEMO_MODE).toLowerCase() === 'true';
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   : null;
 
 export async function POST(req: Request) {
   try {
-    // Create Supabase client in request scope
-    const supabase = await getSupabaseRoute(cookies());
+    const supabase = await getSupabaseRoute(await cookies());
 
     const {
       data: { user },
     } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: 'Not signed in' }, { status: 401 });
-    }
+    if (!user) return NextResponse.json({ error: 'Not signed in' }, { status: 401 });
 
     const body = await req.json();
     const history: { sender: 'me' | 'them'; text: string }[] = body?.history ?? [];
 
-    // Demo / no-OpenAI fallback
     if (DEMO || !openai) {
       return NextResponse.json({
         suggestions: [
@@ -40,15 +31,11 @@ export async function POST(req: Request) {
       });
     }
 
-    const convo = history
-      .map((m) => `${m.sender === 'me' ? 'Me' : 'Them'}: ${m.text}`)
-      .join('\n');
-
+    const convo = history.map(m => `${m.sender === 'me' ? 'Me' : 'Them'}: ${m.text}`).join('\n');
     const prompt = [
-      'Produce 3 short, friendly, safe reply suggestions for a marketplace chat.',
-      'Avoid sharing personal contact info or links. Encourage safe meetups and clarifying questions.',
-      'OUTPUT: one suggestion per line, no numbering.',
-      '',
+      `Produce 3 short, friendly, safe reply suggestions for a marketplace chat.`,
+      `Avoid sharing personal contact info or links. Encourage safe meetups and clarifying questions.`,
+      `OUTPUT: one suggestion per line, no numbering.`,
       `Conversation:\n${convo}`,
     ].join('\n');
 
@@ -59,12 +46,7 @@ export async function POST(req: Request) {
     });
 
     const raw = resp.choices[0]?.message?.content || '';
-    const suggestions = raw
-      .split('\n')
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .slice(0, 3);
-
+    const suggestions = raw.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 3);
     return NextResponse.json({ suggestions });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || 'AI error' }, { status: 500 });
