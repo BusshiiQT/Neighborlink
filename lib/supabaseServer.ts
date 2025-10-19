@@ -1,14 +1,39 @@
 // lib/supabaseServer.ts
-import { cookies } from 'next/headers';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
 /**
- * Next.js 15+: createServerComponentClient expects a cookies getter that
- * returns a Promise<ReadonlyRequestCookies>. Passing the `cookies` function
- * itself satisfies the type and runtime.
+ * Server-side Supabase client (Next 15, App Router)
+ * NOTE: cookies() is async in your type setup → await it.
  */
-export function supabaseServer() {
-  return createServerComponentClient({
-    cookies, // <- do not call it here; pass the function
+export async function getSupabaseServer() {
+  const cookieStore = await cookies(); // ← important
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!; // or SUPABASE_SERVICE_ROLE_KEY (server-only) if you need privileged ops
+
+  return createServerClient(url, key, {
+    cookies: {
+      get(name: string) {
+        return cookieStore.get(name)?.value;
+      },
+      set(name: string, value: string, options?: CookieOptions) {
+        try {
+          cookieStore.set({ name, value, ...(options ?? {}) });
+        } catch {
+          // ignore write failures in non-mutable contexts
+        }
+      },
+      remove(name: string, options?: CookieOptions) {
+        try {
+          cookieStore.set({ name, value: "", ...(options ?? {}), maxAge: 0 });
+        } catch {
+          // ignore
+        }
+      },
+    },
   });
 }
+
+// Optional alias if any files still import `supabaseServer`
+export { getSupabaseServer as supabaseServer };
