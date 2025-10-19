@@ -1,11 +1,20 @@
 // app/api/ai/price/route.ts
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import OpenAI from 'openai';
 import { getSupabaseRoute } from '@/lib/supabaseRoute';
 
+const DEMO =
+  String(process.env.DEMO_MODE ?? process.env.NEXT_PUBLIC_DEMO_MODE ?? 'false')
+    .toLowerCase() === 'true';
+
+const openai = process.env.OPENAI_API_KEY
+  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  : null;
+
 export async function POST(req: Request) {
   try {
-    const supabase = await getSupabaseRoute(); // ← use this (no supabaseRoute)
+    const supabase = await getSupabaseRoute(cookies());
 
     const {
       data: { user },
@@ -16,25 +25,29 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { title, description } = body ?? {};
+    const title: string = body?.title ?? '';
+    const description: string = body?.description ?? '';
 
-    const DEMO = String(process.env.DEMO_MODE).toLowerCase() === 'true';
-    const openai = process.env.OPENAI_API_KEY
-      ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-      : null;
+    if (!title.trim() && !description.trim()) {
+      return NextResponse.json(
+        { error: 'Missing `title` or `description`' },
+        { status: 400 }
+      );
+    }
 
+    // Demo / no-OpenAI fallback
     if (DEMO || !openai) {
       return NextResponse.json({
         suggestedPrice: 300,
-        reasoning: 'Example demo response (AI disabled or DEMO_MODE=true).',
+        reasoning: 'Example demo response (AI disabled or DEMO mode).',
         demo: true,
       });
     }
 
     const prompt = [
-      `Estimate a fair local resale price for the following marketplace listing.`,
-      `Respond with JSON: { "suggestedPrice": number, "reasoning": string }`,
-      ``,
+      'Estimate a fair local resale price for the following marketplace listing.',
+      'Respond with JSON: { "suggestedPrice": number, "reasoning": string }',
+      '',
       `Title: ${title}`,
       `Description: ${description}`,
     ].join('\n');

@@ -1,17 +1,21 @@
+// app/api/ai/replies/route.ts
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import OpenAI from 'openai';
 import { getSupabaseRoute } from '@/lib/supabaseRoute';
-const supabase = await getSupabaseRoute();
 
-const DEMO = String(process.env.DEMO_MODE).toLowerCase() === 'true';
+const DEMO =
+  String(process.env.DEMO_MODE ?? process.env.NEXT_PUBLIC_DEMO_MODE ?? 'false')
+    .toLowerCase() === 'true';
+
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   : null;
 
 export async function POST(req: Request) {
   try {
-    // ✅ MUST await the route client
-    const supabase = await getSupabaseRoute();
+    // Create Supabase client in request scope
+    const supabase = await getSupabaseRoute(cookies());
 
     const {
       data: { user },
@@ -41,9 +45,10 @@ export async function POST(req: Request) {
       .join('\n');
 
     const prompt = [
-      `Produce 3 short, friendly, safe reply suggestions for a marketplace chat.`,
-      `Avoid sharing personal contact info or links. Encourage safe meetups and clarifying questions.`,
-      `OUTPUT: one suggestion per line, no numbering.`,
+      'Produce 3 short, friendly, safe reply suggestions for a marketplace chat.',
+      'Avoid sharing personal contact info or links. Encourage safe meetups and clarifying questions.',
+      'OUTPUT: one suggestion per line, no numbering.',
+      '',
       `Conversation:\n${convo}`,
     ].join('\n');
 

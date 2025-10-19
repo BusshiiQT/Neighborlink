@@ -1,16 +1,20 @@
 // app/api/ai/rewrite/route.ts
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import OpenAI from 'openai';
 import { getSupabaseRoute } from '@/lib/supabaseRoute';
 
-const DEMO = String(process.env.DEMO_MODE).toLowerCase() === 'true';
+const DEMO =
+  String(process.env.DEMO_MODE ?? process.env.NEXT_PUBLIC_DEMO_MODE ?? 'false')
+    .toLowerCase() === 'true';
+
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   : null;
 
 export async function POST(req: Request) {
   try {
-    const supabase = await getSupabaseRoute();
+    const supabase = await getSupabaseRoute(cookies());
 
     const {
       data: { user },
@@ -38,9 +42,9 @@ export async function POST(req: Request) {
 
     const prompt = [
       `Rewrite the following message in a ${tone} tone.`,
-      `Keep it concise, safe, and suitable for a buyer-seller marketplace chat.`,
-      `Avoid sharing personal contact info or links.`,
-      ``,
+      'Keep it concise, safe, and suitable for a buyer-seller marketplace chat.',
+      'Avoid sharing personal contact info or links.',
+      '',
       `Message: """${text}"""`,
     ].join('\n');
 
