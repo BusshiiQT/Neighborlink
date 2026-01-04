@@ -20,7 +20,7 @@ type Listing = {
   category_id: number | null;
   latitude: number | null;
   longitude: number | null;
-  condition?: string;
+  condition?: string | null;
   image?: string; // used by sample listings only
 };
 
@@ -143,6 +143,7 @@ export default function SearchPage() {
     maxPrice: '',
     city: '',
   });
+
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(false);
   const [canLoadMore, setCanLoadMore] = useState(true);
@@ -150,29 +151,34 @@ export default function SearchPage() {
   const [mapView, setMapView] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     (async () => {
       setLoading(true);
 
       // DEMO mode: always show samples and stop here
       if (DEMO) {
-        setListings(sampleListings);
-        setCanLoadMore(false);
-        setLoading(false);
+        if (!cancelled) {
+          setListings(sampleListings);
+          setCanLoadMore(false);
+          setLoading(false);
+        }
         return;
       }
 
       let query = supabase
         .from('listings')
         .select(
-          'id,title,price,city,created_at,listing_media(url),category_id,latitude,longitude',
+          'id,title,price,city,state,created_at,listing_media(url),category_id,latitude,longitude,condition',
           { count: 'exact' }
         )
         .eq('status', 'active')
         .order('created_at', { ascending: false })
         .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
 
+      // categoryId is number | ''
       if (filters.categoryId !== '') {
-        query = query.eq('category_id', Number(filters.categoryId));
+        query = query.eq('category_id', filters.categoryId);
       }
       if (filters.city.trim()) {
         query = query.ilike('city', `%${filters.city.trim()}%`);
@@ -191,9 +197,12 @@ export default function SearchPage() {
 
       const { data, error, count } = await query;
 
+      // If a newer request started, ignore this response
+      if (cancelled) return;
+
       if (error) {
         console.error('[Search] Supabase error:', error.message);
-        // Fallback on error
+        // Fallback on error (only on first page)
         if (page === 0) {
           setListings(sampleListings);
           setCanLoadMore(false);
@@ -212,7 +221,7 @@ export default function SearchPage() {
         return;
       }
 
-      setListings(prev => (page === 0 ? fetched : [...prev, ...fetched]));
+      setListings((prev) => (page === 0 ? fetched : [...prev, ...fetched]));
 
       const total = count ?? 0;
       const loaded = (page + 1) * PAGE_SIZE;
@@ -220,6 +229,11 @@ export default function SearchPage() {
 
       setLoading(false);
     })();
+
+    // Cleanup cancels in-flight request from overwriting newer state
+    return () => {
+      cancelled = true;
+    };
   }, [filters, page]);
 
   function onApply(newFilters: Filters) {
@@ -229,7 +243,7 @@ export default function SearchPage() {
 
   function loadMore() {
     if (!canLoadMore || loading) return;
-    setPage(p => p + 1);
+    setPage((p) => p + 1);
   }
 
   return (
@@ -238,7 +252,7 @@ export default function SearchPage() {
         <h1 className="text-xl font-semibold">Browse listings</h1>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setMapView(v => !v)}
+            onClick={() => setMapView((v) => !v)}
             className="px-3 py-1.5 rounded border"
           >
             {mapView ? 'Show Grid' : 'Show Map'}

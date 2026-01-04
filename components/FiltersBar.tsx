@@ -25,6 +25,7 @@ export default function FiltersBar({
   function apply() {
     onChange(local);
   }
+
   function reset() {
     const blank: Filters = { q: '', categoryId: '', minPrice: '', maxPrice: '', city: '' };
     setLocal(blank);
@@ -40,16 +41,19 @@ export default function FiltersBar({
           value={local.q}
           onChange={(e) => setLocal({ ...local, q: e.target.value })}
         />
+
         <CategorySelect
           value={local.categoryId}
           onChange={(v) => setLocal({ ...local, categoryId: v })}
         />
+
         <input
           className="border rounded p-2"
           placeholder="City (e.g., Joliet)"
           value={local.city}
           onChange={(e) => setLocal({ ...local, city: e.target.value })}
         />
+
         <input
           className="border rounded p-2"
           placeholder="Min $"
@@ -57,6 +61,7 @@ export default function FiltersBar({
           value={local.minPrice}
           onChange={(e) => setLocal({ ...local, minPrice: e.target.value })}
         />
+
         <input
           className="border rounded p-2"
           placeholder="Max $"
@@ -67,8 +72,21 @@ export default function FiltersBar({
       </div>
 
       <div className="mt-3 flex gap-2">
-        <button onClick={apply} className="px-4 py-2 rounded bg-black text-white">Apply</button>
-        <button onClick={reset} className="px-4 py-2 rounded border">Reset</button>
+        <button
+          type="button"
+          onClick={apply}
+          className="px-4 py-2 rounded bg-black text-white"
+        >
+          Apply
+        </button>
+
+        <button
+          type="button"
+          onClick={reset}
+          className="px-4 py-2 rounded border"
+        >
+          Reset
+        </button>
       </div>
     </div>
   );
