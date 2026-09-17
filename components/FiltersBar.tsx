@@ -20,62 +20,99 @@ export default function FiltersBar({
 }) {
   const [local, setLocal] = useState<Filters>(value);
 
-  useEffect(() => setLocal(value), [value]);
+  useEffect(() => {
+    setLocal(value);
+  }, [value]);
 
   function apply() {
     onChange(local);
   }
 
   function reset() {
-    const blank: Filters = { q: '', categoryId: '', minPrice: '', maxPrice: '', city: '' };
+    const blank: Filters = {
+      q: '',
+      categoryId: '',
+      minPrice: '',
+      maxPrice: '',
+      city: '',
+    };
+
     setLocal(blank);
     onChange(blank);
   }
 
+  const inputClasses =
+    'w-full rounded-lg border border-slate-700 bg-black px-3 py-2.5 text-white placeholder:text-slate-500 outline-none transition focus:border-slate-400';
+
   return (
-    <div className="rounded-2xl border p-3 md:p-4 bg-white/70 backdrop-blur">
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+    <div className="rounded-2xl border border-slate-800 bg-slate-950 p-4">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
         <input
-          className="border rounded p-2"
+          className={inputClasses}
           placeholder="Search keywords"
           value={local.q}
-          onChange={(e) => setLocal({ ...local, q: e.target.value })}
+          onChange={(e) =>
+            setLocal({
+              ...local,
+              q: e.target.value,
+            })
+          }
         />
 
         <CategorySelect
           value={local.categoryId}
-          onChange={(v) => setLocal({ ...local, categoryId: v })}
+          onChange={(v) =>
+            setLocal({
+              ...local,
+              categoryId: v,
+            })
+          }
         />
 
         <input
-          className="border rounded p-2"
+          className={inputClasses}
           placeholder="City (e.g., Joliet)"
           value={local.city}
-          onChange={(e) => setLocal({ ...local, city: e.target.value })}
+          onChange={(e) =>
+            setLocal({
+              ...local,
+              city: e.target.value,
+            })
+          }
         />
 
         <input
-          className="border rounded p-2"
+          className={inputClasses}
           placeholder="Min $"
           inputMode="decimal"
           value={local.minPrice}
-          onChange={(e) => setLocal({ ...local, minPrice: e.target.value })}
+          onChange={(e) =>
+            setLocal({
+              ...local,
+              minPrice: e.target.value,
+            })
+          }
         />
 
         <input
-          className="border rounded p-2"
+          className={inputClasses}
           placeholder="Max $"
           inputMode="decimal"
           value={local.maxPrice}
-          onChange={(e) => setLocal({ ...local, maxPrice: e.target.value })}
+          onChange={(e) =>
+            setLocal({
+              ...local,
+              maxPrice: e.target.value,
+            })
+          }
         />
       </div>
 
-      <div className="mt-3 flex gap-2">
+      <div className="mt-4 flex gap-2">
         <button
           type="button"
           onClick={apply}
-          className="px-4 py-2 rounded bg-black text-white"
+          className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black transition hover:bg-slate-200"
         >
           Apply
         </button>
@@ -83,7 +120,7 @@ export default function FiltersBar({
         <button
           type="button"
           onClick={reset}
-          className="px-4 py-2 rounded border"
+          className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-white transition hover:border-slate-500 hover:bg-slate-900"
         >
           Reset
         </button>
