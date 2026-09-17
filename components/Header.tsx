@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import type { User } from '@supabase/supabase-js';
 
 function Avatar({ email }: { email?: string | null }) {
   const letter = email?.charAt(0)?.toUpperCase() || 'U';
@@ -14,22 +15,41 @@ function Avatar({ email }: { email?: string | null }) {
 }
 
 export default function Header() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
+  const [logoutError, setLogoutError] = useState('');
+  const loggingOut = useRef(false);
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let mounted = true;
-    (async () => {
-      const { data } = await supabase.auth.getUser();
+    let identity: string | null | undefined;
+    let revision = 0;
+    let reload: ReturnType<typeof setTimeout> | undefined;
+    const updateUser = (nextUser: User | null) => {
       if (!mounted) return;
-      setUser(data.user ?? null);
-    })();
+      const nextId = nextUser?.id ?? null;
+      const changed = identity !== undefined && identity !== nextId;
+      identity = nextId;
+      setUser(nextUser);
+      if (changed && !loggingOut.current) {
+        // Reset page-local state and the router cache, including in other tabs.
+        clearTimeout(reload);
+        reload = setTimeout(() => window.location.reload(), 0);
+      }
+    };
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      setUser(session?.user ?? null);
+      revision++;
+      updateUser(session?.user ?? null);
     });
+    const initialRevision = revision;
+    void supabase.auth.getUser().then(({ data }) => {
+      if (revision === initialRevision) updateUser(data.user ?? null);
+    }).catch(() => { /* A transient lookup failure must not change identity. */ });
     return () => {
       mounted = false;
+      clearTimeout(reload);
       sub.subscription.unsubscribe();
     };
   }, []);
@@ -45,8 +65,19 @@ export default function Header() {
   }, [open]);
 
   async function signOut() {
-    await supabase.auth.signOut();
-    window.location.href = '/';
+    if (loggingOut.current) return;
+    loggingOut.current = true;
+    setSigningOut(true);
+    setLogoutError('');
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      window.location.replace('/');
+    } catch {
+      setLogoutError('Could not sign out. Please try again.');
+      loggingOut.current = false;
+      setSigningOut(false);
+    }
   }
 
   return (
@@ -131,22 +162,16 @@ export default function Header() {
                   >
                     Messages
                   </Link>
-                  <Link
-                    role="menuitem"
-                    href="/verify"
-                    className="block px-3 py-2 text-sm hover:bg-slate-900"
-                    onClick={() => setOpen(false)}
-                  >
-                    Verify account
-                  </Link>
                   <div className="border-t border-slate-800" />
                   <button
                     role="menuitem"
                     onClick={signOut}
+                    disabled={signingOut}
                     className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-slate-900"
                   >
-                    Sign out
+                    {signingOut ? 'Signing out…' : 'Sign out'}
                   </button>
+                  {logoutError && <p role="alert" className="px-3 py-2 text-sm text-red-400">{logoutError}</p>}
                 </div>
               )}
             </div>
